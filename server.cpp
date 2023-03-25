@@ -8,17 +8,38 @@ public:
     }
 
     Server(const Server<buffer_size>& other) = delete;
-    Server<buffer_size> operator=(const Server<buffer_size>& other) = delete;
+    Server<buffer_size>& operator=(const Server<buffer_size>& other) = delete;
+
+    Server(Server<buffer_size>&& other) noexcept {
+        this->operator=(std::forward<Server<buffer_size>&&>());
+    }
+
+    Server<buffer_size>& operator=(Server<buffer_size>&& other) noexcept {
+        app_entity::operator=(std::forward<Server<buffer_size>&&>(other));
+        if (this != &other) {
+            server_socket = std::move(other.server_socket);
+            clientInfo = std::move(other.clientInfo);
+            CLIENT_IP = other.CLIENT_IP;
+            other.CLIENT_IP = nullptr;
+            ClientConn = std::move(other.ClientConn); // socket of connected client
+            servBuff = std::move(other.servBuff);
+            clientBuff = std::move(other.clientBuff);
+        }
+        return *this;
+    }
 
     ~Server() {
         //sockets will be closed since destructor call is guaranteed after exception trows
-        closesocket(server_socket);
-        closesocket(ClientConn);
+        if (is_active) {
+            closesocket(server_socket);
+            closesocket(ClientConn);
+        }
         delete[] CLIENT_IP;
     }
 
     void messenger() override {
         // Initializing all sockets and binding to them before we start to listen
+        is_active = true;
         init_winSock();
         init_socket();
         bind_to_socket();
@@ -35,6 +56,10 @@ public:
             // Check whether server would like to stop chatting
             if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x') {
                 shutdown(ClientConn, SD_BOTH);
+                closesocket(server_socket);
+                closesocket(ClientConn);
+                WSACleanup();
+                is_active = false;
                 return;
             }
 

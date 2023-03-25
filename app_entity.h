@@ -25,12 +25,37 @@ public:
         for (size_t i = 0; i < server_ip.size(); i++) {
             SERVER_IP[i] = server_ip[i];
         }
+        is_active = false;
         SERVER_IP[server_ip.size()] = '\0';
         format_ip();
     }
 
+    app_entity(const app_entity&) = delete;
+    app_entity& operator=(const app_entity&) = delete;
+
+    app_entity(app_entity&& other) noexcept {
+        this->operator=(std::forward<app_entity&&>(other));
+    }
+
+    app_entity& operator=(app_entity&& other) noexcept {
+        if (this != &other) {
+            other.is_active = false;
+            SERVER_IP = other.SERVER_IP;
+            other.SERVER_IP = nullptr;
+            PORT = other.PORT;
+            error_status = other.error_status;
+            wsData = other.wsData;
+            numericIP = other.numericIP;
+            servInfo = other.servInfo;
+            packet_size = other.packet_size;
+        }
+        return *this;
+    }
+
     ~app_entity() {
-        WSACleanup();
+        if (is_active)
+            WSACleanup();
+
         delete[] SERVER_IP;
     }
 
@@ -47,7 +72,7 @@ protected:
     }
 
     void init_winSock() {
-        // asking system to open it's socket to us
+        // asking system to tell its socket version to us
         error_status = WSAStartup(MAKEWORD(2,2), &wsData);
 
         if (error_status != 0) {
@@ -75,6 +100,7 @@ protected:
     in_addr numericIP; //byte to byte representation of IPv4
     sockaddr_in servInfo; //info about server (both client and server should know what he is connected to)
     size_t packet_size; //packet size is calculated while server get info about the users by recv() or vice versa
+    bool is_active; //is messenger started
 };
 
 

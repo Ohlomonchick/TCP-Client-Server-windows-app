@@ -6,17 +6,35 @@ public:
     Client(const std::string&& server_ip, size_t port=8000): app_entity(std::forward<const std::string&&>(server_ip), port) {}
 
     Client(const Client<buffer_size>& other) = delete;
-    Client<buffer_size> operator=(const Client<buffer_size>& other) = delete;
+    Client<buffer_size>& operator=(const Client<buffer_size>& other) = delete;
+
+    Client(Client<buffer_size>&& other) noexcept {
+        this->operator=(std::forward<Client<buffer_size>&&>(other));
+    }
+
+    Client<buffer_size>& operator=(Client<buffer_size>&& other) noexcept {
+        app_entity::operator=(std::forward<Client<buffer_size>&&>(other));
+        if (this != &other) {
+            client_socket = other.client_socket;
+            servBuff = std::move(other.servBuff);
+            clientBuff = std::move(other.clientBuff);;
+        }
+        return *this;
+    }
+
+
 
     ~Client() {
         //sockets will be closed since destructor call is guaranteed after exception trows
-        closesocket(client_socket);
+        if (is_active)
+            closesocket(client_socket);
     }
 
     void messenger() override {
         init_winSock();
         init_socket();
         connect_to_server();
+        is_active = true;
 
         while (true) {
 
@@ -26,6 +44,9 @@ public:
             // Check whether client like to stop chatting
             if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x') {
                 shutdown(client_socket, SD_BOTH);
+                WSACleanup();
+                closesocket(client_socket);
+                is_active = false;
                 return;
             }
 
