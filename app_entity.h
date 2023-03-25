@@ -3,7 +3,7 @@
 #include <WS2tcpip.h>
 #include <stdio.h>
 #include <iostream>
-#include <vector>
+#include <array>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -14,14 +14,15 @@
 
 class app_entity {
 public:
-    explicit app_entity(const std::string&& server_ip, size_t port=8000) {
-        PORT=port;
-        SERVER_IP = new char[server_ip.size()];
-        for (size_t i = 0; i < server_ip.size(); i++) {
-            SERVER_IP[i] = server_ip[i];
-        }
+    app_entity() = default;
+
+    ~app_entity() {
+        delete[] SERVER_IP;
     }
 
+    virtual void messenger() = 0;
+
+protected:
     void format_ip() {
         error_status = inet_pton(AF_INET, SERVER_IP, &numericIP);
 
@@ -41,7 +42,7 @@ public:
     }
 
     void init_serInfo() {
-        ZeroMemory(&servInfo, sizeof(servInfo));	// Initializing servInfo structure
+        ZeroMemory(&servInfo, sizeof(servInfo));	// Zeroing memory for servInfo structure
 
         servInfo.sin_family = AF_INET;
         servInfo.sin_addr = numericIP;
@@ -50,13 +51,13 @@ public:
 
     virtual void init_socket() = 0;
 
-protected:
     char * SERVER_IP;
     size_t PORT;
     int error_status;
     WSADATA wsData;
     in_addr numericIP;
     sockaddr_in servInfo;
+    size_t packet_size = 0;
 };
 
 
