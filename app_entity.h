@@ -1,7 +1,7 @@
 #include <iostream>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
-#include <stdio.h>
+#include <cstdio>
 #include <iostream>
 #include <array>
 
@@ -16,7 +16,20 @@ class app_entity {
 public:
     app_entity() = default;
 
+    app_entity(const std::string&& server_ip, size_t port) {
+        PORT=port;
+        error_status = 0;
+
+        SERVER_IP = new char[server_ip.size() + 1];
+        for (size_t i = 0; i < server_ip.size(); i++) {
+            SERVER_IP[i] = server_ip[i];
+        }
+        SERVER_IP[server_ip.size()] = '\0';
+        format_ip();
+    }
+
     ~app_entity() {
+        WSACleanup();
         delete[] SERVER_IP;
     }
 

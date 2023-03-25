@@ -3,20 +3,14 @@
 template<size_t buffer_size>
 class Client: public app_entity {
 public:
-    Client(const std::string&& server_ip, size_t port=8000) {
-        PORT=port;
+    Client(const std::string&& server_ip, size_t port=8000): app_entity(std::forward<const std::string&&>(server_ip), port) {}
 
-        SERVER_IP = new char[server_ip.size()];
-        for (size_t i = 0; i < server_ip.size(); i++) {
-            SERVER_IP[i] = server_ip[i];
-        }
-        SERVER_IP[server_ip.size()] = '\0';
-        format_ip();
-    }
+    Client(const Client<buffer_size>& other) = delete;
+    Client<buffer_size> operator=(const Client<buffer_size>& other) = delete;
 
     ~Client() {
+        //sockets will be closed since destructor call is guaranteed after exception trows
         closesocket(client_socket);
-        WSACleanup();
     }
 
     void messenger() override {
@@ -32,24 +26,18 @@ public:
             // Check whether client like to stop chatting
             if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x') {
                 shutdown(client_socket, SD_BOTH);
-                closesocket(client_socket);
-                WSACleanup();
                 return;
             }
 
             packet_size = send(client_socket, clientBuff.data(), clientBuff.size(), 0);
 
             if (packet_size == SOCKET_ERROR) {
-                closesocket(client_socket);
-                WSACleanup();
                 throw std::runtime_error("Can't send message to Server. Error #" + std::to_string(WSAGetLastError()));
             }
 
             packet_size = recv(client_socket, servBuff.data(), servBuff.size(), 0);
 
             if (packet_size == SOCKET_ERROR) {
-                closesocket(client_socket);
-                WSACleanup();
                 throw std::runtime_error("Can't receive message from Server. Error #" + std::to_string(WSAGetLastError()));
             }
             else
@@ -63,8 +51,6 @@ private:
         client_socket = socket(AF_INET, SOCK_STREAM, 0);
 
         if (client_socket == INVALID_SOCKET) {
-            closesocket(client_socket);
-            WSACleanup();
             throw std::runtime_error("Error initialization socket #" + std::to_string(WSAGetLastError()));
         }
         else
@@ -76,8 +62,6 @@ private:
         error_status = connect(client_socket, (sockaddr*)&servInfo, sizeof(servInfo));
 
         if (error_status != 0) {
-            closesocket(client_socket);
-            WSACleanup();
             throw std::runtime_error("Connection to Server is FAILED. Error #" + std::to_string(WSAGetLastError()));
         }
         else
