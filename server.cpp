@@ -18,6 +18,7 @@ public:
     }
 
     void messenger() override {
+        // Initializing all sockets and binding to them before we start to listen
         init_winSock();
         init_socket();
         bind_to_socket();
@@ -60,6 +61,7 @@ private:
     }
 
     void bind_to_socket() {
+        // Server socket binding
         init_serInfo();
         error_status = bind(server_socket, (sockaddr*)&servInfo, sizeof(servInfo));
 
@@ -91,7 +93,7 @@ private:
             throw std::runtime_error("Client detected, but can't connect to a client. Error #" + std::to_string(WSAGetLastError()));
         }
         else {
-            // Convert connected client's IP to standard string format
+            // Convert connected client's IP to string by IPv4 format
             inet_ntop(AF_INET, &clientInfo.sin_addr, CLIENT_IP, INET_ADDRSTRLEN);
             std::cout << "Connection to a client established successfully with IP address " << CLIENT_IP  << std::endl;
 
@@ -99,9 +101,9 @@ private:
     }
 
     SOCKET server_socket;
-    sockaddr_in clientInfo;
+    sockaddr_in clientInfo; //library struct that stores connection info
     char * CLIENT_IP;
-    SOCKET ClientConn;
+    SOCKET ClientConn; // socket of connected client
     std::array<char, buffer_size> servBuff;
     std::array<char, buffer_size> clientBuff;
 };

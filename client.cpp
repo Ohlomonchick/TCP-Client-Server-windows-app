@@ -48,6 +48,7 @@ public:
 
 private:
     void init_socket() override {
+        //initializing client_socket
         client_socket = socket(AF_INET, SOCK_STREAM, 0);
 
         if (client_socket == INVALID_SOCKET) {
@@ -58,6 +59,7 @@ private:
     }
 
     void connect_to_server() {
+        //trying to connect to server
         init_serInfo();
         error_status = connect(client_socket, (sockaddr*)&servInfo, sizeof(servInfo));
 
